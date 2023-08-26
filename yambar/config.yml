@@ -1,0 +1,329 @@
+underline: &underline
+  underline:
+    size: 1
+    color: ffffffff
+
+font-md: &font-md "SauceCodePro Nerd Font:size=11.5:regular"
+font-lg: &font-lg "SauceCodePro Nerd Font:size=11.5:bold"
+font-icon: &font-icon "SauceCodePro Nerd Font:size=13"
+
+icon-margin: &icon-margin {left-margin: 6, right-margin: 6}
+
+col-normal: &col-normal {foreground: aaaaaaff}
+col-alert: &col-alert {foreground: ffcc66ff}
+col-critical: &col-critical {foreground: ff5555ff, font: *font-lg}
+
+blank: &blank {string: {text: ""}}
+
+bar:
+  height: 22
+  location: top
+  background: 242424ff
+  foreground: aaaaaaff
+  font: *font-md
+  spacing: 2 # around each module
+  margin: 10 # around bar
+  border:
+    width: 0
+    color: 161616ff
+    bottom-width: 1
+
+  # Polybar todo
+  # gcal
+
+  right:
+  - network:
+      name: wlp0s20f3
+      content:
+        map:
+          tag: state
+          values:
+            down:
+              string: {text: "睊 {name} DOWN", <<: [*col-critical, *icon-margin]}
+
+            up:
+              map:
+                tag: ipv4
+                default: {string: {text: ""}}
+                values:
+                  "":
+                    string: {text: "睊 {name} NO IP", <<: [*col-alert, *icon-margin]}
+
+  - script:
+      content:
+        - string: {text: "", foreground: 1DB954ff, font: *font-icon}
+        - string: {text: " {stdout} ", max: 44}
+      path: "/home/sagotsky/scripts/yambar-string-wrapper.sh"
+      args: ["playerctl-wrapper.sh"]    # spotify
+
+  - script:
+      anchors:
+        - string: &noop {text: ""}
+      path: "/home/sagotsky/scripts/yambar-gmail"
+      content:
+        - map:
+            tag: gmail-inbox-0-unread
+            values:
+              true:
+                string: {text: '', foreground: 00B373ff, font: *font-icon, <<: *icon-margin}
+              false: {string: *noop}
+        - map:
+            tag: gmail-inbox-1-unread
+            values:
+              true: {string: {text: '', foreground: 5484edff, font: *font-icon, <<: *icon-margin}}
+              false: {string: *noop}
+        - map:
+            tag: gmail-inbox-0-error
+            values:
+              true: {string: {text: '{gmail-inbox-0-error}', foreground: 00B373ff, font: *font-icon}}
+              false: {string: *noop}
+        - map:
+            tag: gmail-inbox-1-error
+            values:
+              true: {string: {text: '{gmail-inbox-0-error}', foreground: 5484edff}}
+              false: {string: *noop}
+  - alsa:
+      card: hw:PCH
+      mixer: "Capture"
+      content:
+        map:
+          tag: muted
+          values:
+            true: {string: {text: "", <<: *col-critical}}
+            false:
+              map:
+                tag: volume
+                default: *blank
+                values:
+                  0: {string: {text: "", <<: *col-alert}}
+  - alsa:
+      card: hw:PCH
+      mixer: Master
+      content:
+        list:
+          items:
+            - map:
+                on-click: /bin/sh -c "amixer -q sset Speaker unmute && amixer -q sset Headphone unmute && amixer -q sset Master toggle"
+                tag: muted
+                values:
+                  true: {string: {text: " 婢 ", foreground: ffffff66, font: *font-icon}}
+                  false:
+                    ramp:
+                      tag: volume
+                      items:
+                        - string: {text: "  ", font: *font-icon}
+                        - string: {text: "  ", font: *font-icon}
+                        - string: {text: "  ", font: *font-icon}
+                        - string: {text: "  ", font: *font-icon}
+                        - string: {text: "  ", font: *font-icon}
+            - string: {text: "{percent}%"}
+
+  - script:
+      anchors:
+        - cpu: &cpu  {text: " {cpu}%", <<: *icon-margin}
+        - mem: &mem  {text: " {mem}%", <<: *icon-margin}
+        - disk: &disk {text: " {disk}%", <<: *icon-margin}
+
+        - noop: &noop {text: "", <<: *icon-margin}
+
+      path: "/home/sagotsky/scripts/yambar-top"
+      args: ["10"]
+      poll-interval: 10
+      content:
+        - ramp:
+            tag: cpu
+            items:
+              - string: {<<: [*noop]}
+              - string: {<<: [*noop]}
+              - string: {<<: [*cpu, *col-normal]}
+              - string: {<<: [*cpu, *col-alert]}
+              - string: {<<: [*cpu, *col-critical]}
+        - ramp:
+            tag: mem
+            items:
+              - string: {<<: [*noop]}
+              - string: {<<: [*noop]}
+              - string: {<<: [*mem, *col-normal]}
+              - string: {<<: [*mem, *col-alert]}
+              - string: {<<: [*mem, *col-critical]}
+        - ramp:
+            tag: disk
+            items:
+              - string: {<<: [*noop]}
+              - string: {<<: [*noop]}
+              - string: {<<: [*disk, *col-normal]}
+              - string: {<<: [*disk, *col-alert]}
+              - string: {<<: [*disk, *col-critical]}
+
+  - script:
+      content:
+        - string: {text: " ", foreground: 0db7edff, font: *font-icon}
+        - string: {text: " {stdout} ", max: 44}
+
+      path: "/home/sagotsky/scripts/yambar-string-wrapper.sh"
+      args: ["docker-counter.sh"]    # spotify
+
+  - battery:
+      name: BAT0
+      poll-interval: 15
+      content:
+        map:
+          tag: state
+          values:
+            full:
+              - string: {text: "", <<: *icon-margin}
+            discharging:
+              - ramp:
+                  tag: capacity
+                  items:
+                    - string: {text: , foreground: ff0000ff, font: *font-icon, <<: *icon-margin}
+                    - string: {text: , foreground: ffa600ff, font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+                    - string: {text: , font: *font-icon, <<: *icon-margin}
+              - string: {text: "{capacity}%", <<: *icon-margin}
+            charging:
+              - string: {text: , <<: *icon-margin}
+              # - string: {text: "{capacity}%"}
+            not charging:
+              - ramp:
+                  tag: capacity
+                  items:
+                    - string: {text:  , foreground: ff0000ff, font: *font-icon}
+                    - string: {text:  , foreground: ffa600ff, font: *font-icon}
+                    - string: {text:  , foreground: 00ff00ff, font: *font-icon}
+                    - string: {text:  , foreground: 00ff00ff, font: *font-icon}
+                    - string: {text:  , foreground: 00ff00ff, font: *font-icon}
+                    - string: {text:  , foreground: 00ff00ff, font: *font-icon}
+                    - string: {text:  , foreground: 00ff00ff, font: *font-icon}
+                    - string: {text:  , font: *font-icon}
+                    - string: {text:  , font: *font-icon}
+                    - string: {text:  , font: *font-icon}
+              - string: {text: "{capacity}%", left-margin: 12}
+
+  - clock:
+      time-format: "%I:%M %p"
+      date-format: "%m/%d"
+      content:
+        - string: {text: " ", font: *font-md, <<: *icon-margin}
+        - string: {text: "{date}", font: *font-md}
+        - string: {text: "{time}", <<: *icon-margin, font: *font-md}
+
+  - script:
+      path: "/home/sagotsky/scripts/yambar-dunst.sh"
+      args: ["daemon"]
+      content:
+        map:
+          on-click: "yambar-dunst.sh click"
+          tag: "dunst_is_paused"
+          values:
+            true: {string: {text: "", foreground: ff2222ff, <<: *icon-margin}}
+            false: {string: {text: "", <<: *icon-margin}}
+
+  - script:
+      path: "/home/sagotsky/scripts/yambar-tray.sh"
+      args: []
+      content:
+        - string: {text: ""}
+  - script:
+      path: "/home/sagotsky/scripts/yambar-tray-width.sh"
+      poll-interval: 10
+      args: []
+      content:
+        - string: {text: "{padding}"}
+
+  center:
+    - xwindow:
+        content:
+          string: {text: "{title}", font: *font-lg, max: 64}
+  left:
+  - script:
+      path: "/home/sagotsky/source/wm_tail/scripts/wm_tail.sh"
+      args: ["wm-formatter-yambar.sh"]
+      anchors:
+        - string: &urgent   {foreground: ff5500ff}
+        - string: &visible  {foreground: ffffffff}
+        - string: &occupied {foreground: 666666ff}
+        - string: &empty    {foreground: 333333ff}
+
+        # - ws-icon-style: &ws-icon-style {right-margin: 0, font: *font-icon}
+        - ws-icon-style: &ws-icon-style {font: *font-icon, <<: *icon-margin}
+
+        - ws-icon0: &ws-icon0 {text: "", <<: *ws-icon-style, left-margin: 0}    # offset becaues this is the first one
+        - ws-icon2: &ws-icon1 {text: "", <<: *ws-icon-style}
+        - ws-icon3: &ws-icon2 {text: "", <<: *ws-icon-style}
+        - ws-icon4: &ws-icon3 {text: "", <<: *ws-icon-style}
+        - ws-icon5: &ws-icon4 {text: "", <<: *ws-icon-style}
+        - ws-icon6: &ws-icon5 {text: "", <<: *ws-icon-style}
+        - ws-icon7: &ws-icon6 {text: "", <<: *ws-icon-style}
+        - ws-icon8: &ws-icon7 {text: "", <<: *ws-icon-style}
+        - ws-icon9: &ws-icon8 {text: "", <<: *ws-icon-style}
+        - ws-icon9: &ws-icon9 {text: "", <<: *ws-icon-style}
+
+        - ws0: &ws0
+             urgent:   {string: {<<: [*ws-icon0, *urgent]}}
+             visible:  {string: {<<: [*ws-icon0, *visible]}}
+             occupied: {string: {<<: [*ws-icon0, *occupied]}}
+             empty:    {string: {<<: [*ws-icon0, *empty]}}
+        - ws1: &ws1
+             urgent:   {string: {<<: [*ws-icon1, *urgent]}}
+             visible:  {string: {<<: [*ws-icon1, *visible]}}
+             occupied: {string: {<<: [*ws-icon1, *occupied]}}
+             empty:    {string: {<<: [*ws-icon1, *empty]}}
+        - ws2: &ws2
+             urgent:   {string: {<<: [*ws-icon2, *urgent]}}
+             visible:  {string: {<<: [*ws-icon2, *visible]}}
+             occupied: {string: {<<: [*ws-icon2, *occupied]}}
+             empty:    {string: {<<: [*ws-icon2, *empty]}}
+        - ws3: &ws3
+             urgent:   {string: {<<: [*ws-icon3, *urgent]}}
+             visible:  {string: {<<: [*ws-icon3, *visible]}}
+             occupied: {string: {<<: [*ws-icon3, *occupied]}}
+             empty:    {string: {<<: [*ws-icon3, *empty]}}
+        - ws4: &ws4
+             urgent:   {string: {<<: [*ws-icon4, *urgent]}}
+             visible:  {string: {<<: [*ws-icon4, *visible]}}
+             occupied: {string: {<<: [*ws-icon4, *occupied]}}
+             empty:    {string: {<<: [*ws-icon4, *empty]}}
+        - ws5: &ws5
+             urgent:   {string: {<<: [*ws-icon5, *urgent]}}
+             visible:  {string: {<<: [*ws-icon5, *visible]}}
+             occupied: {string: {<<: [*ws-icon5, *occupied]}}
+             empty:    {string: {<<: [*ws-icon5, *empty]}}
+        - ws6: &ws6
+             urgent:   {string: {<<: [*ws-icon6, *urgent]}}
+             visible:  {string: {<<: [*ws-icon6, *visible]}}
+             occupied: {string: {<<: [*ws-icon6, *occupied]}}
+             empty:    {string: {<<: [*ws-icon6, *empty]}}
+        - ws7: &ws7
+             urgent:   {string: {<<: [*ws-icon7, *urgent]}}
+             visible:  {string: {<<: [*ws-icon7, *visible]}}
+             occupied: {string: {<<: [*ws-icon7, *occupied]}}
+             empty:    {string: {<<: [*ws-icon7, *empty]}}
+        - ws8: &ws8
+             urgent:   {string: {<<: [*ws-icon8, *urgent]}}
+             visible:  {string: {<<: [*ws-icon8, *visible]}}
+             occupied: {string: {<<: [*ws-icon8, *occupied]}}
+             empty:    {string: {<<: [*ws-icon8, *empty]}}
+        - ws9: &ws9
+             urgent:   {string: {<<: [*ws-icon9, *urgent]}}
+             visible:  {string: {<<: [*ws-icon9, *visible]}}
+             occupied: {string: {<<: [*ws-icon9, *occupied]}}
+             empty:    {string: {<<: [*ws-icon9, *empty]}}
+
+      content:
+        - map: {tag: workspace-0-state, values: {<<: *ws0}}
+        - map: {tag: workspace-1-state, values: {<<: *ws1}}
+        - map: {tag: workspace-2-state, values: {<<: *ws2}}
+        - map: {tag: workspace-3-state, values: {<<: *ws3}}
+        - map: {tag: workspace-4-state, values: {<<: *ws4}}
+        - map: {tag: workspace-5-state, values: {<<: *ws5}}
+        - map: {tag: workspace-6-state, values: {<<: *ws6}}
+        - map: {tag: workspace-7-state, values: {<<: *ws7}}
+        - map: {tag: workspace-8-state, values: {<<: *ws8}}
+        - map: {tag: workspace-9-state, values: {<<: *ws9}}

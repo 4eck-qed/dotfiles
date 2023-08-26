@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# bspc rule -a kitty      follow=on state=pseudo_tiled
+bspc rule -a jetbrains-rider    desktop='^1' follow=on
+bspc rule -a discord            desktop='^4' follow=on
+bspc rule -a lutris             desktop='^9' follow=on
+bspc rule -a steam              desktop='^9' follow=on
+bspc rule -a Steam              desktop='^9' follow=on
+bspc rule -a leagueoflegends    desktop='^10' follow=on
+bspc rule -a xivlauncher        desktop='^10' follow=on
+bspc rule -a $BROWSER           desktop='^11' follow=on
+
+bspc rule -a thunar 	state=floating
+bspc rule -a Thunar 	state=floating
+bspc rule -a Pinta 	    state=floating
+bspc rule -a vlc 	    state=floating
+bspc rule -a Notes-Up 	state=floating
+bspc rule feh 		    state=floating
+bspc rule mpv		    state=floating

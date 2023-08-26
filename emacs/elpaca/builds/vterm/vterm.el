@@ -1,0 +1,1 @@
+/home/baron/.emacs.d/elpaca/repos/emacs-libvterm/vterm.el

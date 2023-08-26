@@ -1,0 +1,28 @@
+#!/bin/sh
+DIR="$HOME/.config/bspwm/polybar"
+
+if [[ ! $(pidof eww) ]]
+then
+  eww open bar;
+fi
+
+if ps ax | grep -v grep | grep discord > /dev/null
+then
+    echo "discord service running, everything is fine"
+else
+    exec discord &
+fi
+
+if ps ax | grep -v grep | grep kotatogram-desktop > /dev/null
+then
+    echo "telegram-desktop service running, everything is fine"
+else
+    exec kotatogram-desktop &
+fi
+
+if ps ax | grep -v grep | grep spicetify > /dev/null
+then
+    echo "telegram-desktop service running, everything is fine"
+else
+    exec kotatogram-desktop &
+fi

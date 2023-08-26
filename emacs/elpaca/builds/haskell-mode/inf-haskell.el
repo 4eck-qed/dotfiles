@@ -1,0 +1,1 @@
+/home/baron/.emacs.d/elpaca/repos/haskell-mode/inf-haskell.el

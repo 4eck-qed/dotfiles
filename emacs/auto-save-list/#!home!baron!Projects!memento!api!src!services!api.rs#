@@ -1,0 +1,443 @@
+use std::default;
+use std::process::id;
+use std::sync::Arc;
+
+use super::hermes::Hermes;
+use super::login::LoginService;
+use super::ArcMutex;
+use memento_shared::conversion::ToMemory;
+use memento_shared::document::{Document, Filter};
+use memento_shared::guid::Guid;
+use memento_shared::memento::generic_response::Content;
+use memento_shared::memento::{
+    message_filter, AnswerFriendRequestRequest, ForwardFriendRequestRequest, FriendRequest,
+    FriendRequestStatus, GenericResponse, Message, MessageFilter, MessageFilterType,
+};
+use memento_shared::random::Random;
+use memento_shared::services::account::AccountService;
+use memento_shared::services::contact::ContactService;
+use memento_shared::services::friend::FriendRequestService;
+use memento_shared::services::message::MessageService;
+use memento_shared::services::StorageService;
+use memento_shared::{
+    client::{ManagedBrokerClient, ManagedNotifyClient},
+    memento::{
+        api_server::Api, AcceptFriendRequestRequest, AcceptFriendRequestResponse, Account,
+        AddContactRequest, AddContactResponse, AnnounceOfflineResponse, AnnounceOnlineResponse,
+        ApiStatus, CreateAccountResponse, DownloadFileRequest, DownloadFileResponse,
+        GetContactsResponse, GetFriendRequestsResponse, GetLoginHistoryResponse,
+        GetMessagesRequest, GetMessagesResponse, KillResponse, LoginRequest, LoginResponse,
+        LogoutResponse, PingRequest, PingResponse, RejectFriendRequestRequest,
+        RejectFriendRequestResponse, RemoveContactRequest, RemoveContactResponse, SendCardRequest,
+        SendCardResponse, SendMessageRequest, SendMessageResponse, UpdateAccountRequest,
+        UpdateAccountResponse, UploadFileRequest, UploadFileResponse,
+    },
+    tonic::GrpcResult,
+};
+use tokio::sync::Mutex;
+use tonic::{Request, Response, Streaming};
+
+// #[derive(Debug)]
+pub struct ApiService {
+    // logger
+    // token
+    broker: ManagedBrokerClient,
+    notify: ManagedNotifyClient,
+    hms: ArcMutex<Hermes>,
+    lgs: ArcMutex<LoginService>,
+    acs: ArcMutex<AccountService>,
+    cts: ArcMutex<ContactService>,
+    mss: ArcMutex<MessageService>,
+    frs: ArcMutex<FriendRequestService>,
+}
+
+impl ApiService {
+    pub fn new(
+        broker: ManagedBrokerClient,
+        notify: ManagedNotifyClient,
+        hms: Hermes,
+        lgs: LoginService,
+        acs: AccountService,
+        cts: ContactService,
+        mss: MessageService,
+        frs: FriendRequestService,
+    ) -> Self {
+        Self {
+            broker,
+            notify,
+            hms: ArcMutex::new(hms.into()),
+            lgs: ArcMutex::new(lgs.into()),
+            acs: ArcMutex::new(acs.into()),
+            cts: ArcMutex::new(cts.into()),
+            mss: ArcMutex::new(mss.into()),
+            frs: ArcMutex::new(frs.into()),
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl Api for ApiService {
+    async fn create_account(&self, _: Request<()>) -> GrpcResult<CreateAccountResponse> {
+        let mut client = self.broker.connect().await?;
+        let credentials = client.generate_credentials(()).await?.into_inner();
+
+        let response = CreateAccountResponse {
+            status: ApiStatus::AsSuccess.into(),
+            account: Some(Account {
+                id: credentials.id.to_vec(),
+                key: credentials.key.to_vec(),
+                name: "Anon".into(),
+                avatar: "Schmavatar".into(),
+                status: "Bing Chilling".into(),
+            }),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn login(&self, request: Request<LoginRequest>) -> GrpcResult<LoginResponse> {
+        let request = request.into_inner();
+        let credentials = request.credentials.unwrap();
+        let id = Guid::from_slice(&credentials.id).expect("Id is not a valid Guid!");
+        let key = Guid::from_slice(&credentials.key).expect("Key is not a valid Guid!");
+        let response = LoginResponse {
+            status: ApiStatus::AsUnspecified.into(),
+            account: None,
+        };
+
+        let hms = self.hms.lock().await;
+        if hms
+            .authorize_async(id, key)
+            .await
+            .expect("Authorization failed (error)")
+        {
+            let mut lgs = self.lgs.lock().await;
+            lgs.login(id, key);
+        } else {
+            log::error!("Invalid credentials");
+        }
+
+        Ok(Response::new(response))
+    }
+
+    async fn logout(&self, _: Request<()>) -> GrpcResult<LogoutResponse> {
+        let mut lgs = self.lgs.lock().await;
+        lgs.logout();
+
+        let response = LogoutResponse {
+            status: ApiStatus::AsSuccess.into(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn kill(&self, _: Request<()>) -> GrpcResult<KillResponse> {
+        panic!("Kill was requested");
+    }
+
+    async fn get_friend_requests(&self, _: Request<()>) -> GrpcResult<GetFriendRequestsResponse> {
+        let frs = self.frs.lock().await;
+        let friend_requests = frs.get_by_filter(Filter {
+            id: None,
+            created_at: None,
+            updated_at: None,
+            is_deleted: None,
+            model: None,
+        });
+
+        if let Err(e) = friend_requests {
+            log::error!("Failed to get friend requests: {}", e);
+            return Ok(Response::new(GetFriendRequestsResponse {
+                friend_requests: Vec::new(),
+            }));
+        }
+
+        let response = GetFriendRequestsResponse {
+            friend_requests: friend_requests
+                .unwrap()
+                .into_iter()
+                .map(|x| x.model.unwrap())
+                .collect(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn get_contacts(&self, _: Request<()>) -> GrpcResult<GetContactsResponse> {
+        let cts = self.cts.lock().await;
+        let contacts = cts.get_by_filter(Filter {
+            id: None,
+            created_at: None,
+            updated_at: None,
+            is_deleted: None,
+            model: None,
+        });
+
+        if let Err(e) = contacts {
+            log::error!("Failed to get contacts: {}", e);
+            return Ok(Response::new(GetContactsResponse {
+                contacts: Vec::new(),
+            }));
+        }
+
+        let response = GetContactsResponse {
+            contacts: contacts
+                .unwrap()
+                .into_iter()
+                .map(|x| x.model.unwrap())
+                .collect(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn get_messages(
+        &self,
+        request: Request<GetMessagesRequest>,
+    ) -> GrpcResult<GetMessagesResponse> {
+        let request = request.into_inner();
+        let messages = {
+            let mut filter: Filter<Message> = Filter {
+                id: None,
+                created_at: None,
+                updated_at: None,
+                is_deleted: None,
+                model: Some(Message::default()),
+            };
+
+            let mut filter_id = None;
+            let mut filter_status = None;
+            match request.filter.clone().unwrap().content {
+                Some(message_filter::Content::Id(id)) => filter_id = Some(id),
+                Some(message_filter::Content::Status(status)) => filter_status = Some(status),
+                None => (),
+            };
+
+            let asd = match request.filter.as_ref() {
+                Some(f) => match f.r#type() {
+                    MessageFilterType::MftUnspecified => None,
+                    MessageFilterType::MftSpecific => {
+                        filter.id = Some(
+                            Guid::from_slice(&filter_id.unwrap()).expect("Filter id is not a Guid"),
+                        );
+                        Some(())
+                    }
+                    MessageFilterType::MftBySender => {
+                        filter.model.unwrap().sender_id = filter_id.unwrap();
+                        Some(())
+                    }
+                    MessageFilterType::MftByReceiver => {
+                        filter.model.unwrap().receiver_id = filter_id.unwrap();
+                        Some(())
+                    }
+                    MessageFilterType::MftByStatus => {
+                        filter.model.unwrap().status = filter_status.unwrap();
+                        Some(())
+                    }
+                },
+                None => None,
+            };
+
+            let mss = self.mss.lock().await;
+            mss.get_by_filter(filter).map_err(|e| {
+                log::error!("Failed to get contacts: {}", e);
+                tonic::Status::internal("Failed to get contacts")
+            })?
+        };
+
+        let response = GetMessagesResponse {
+            messages: messages.into_iter().map(|x| x.model.unwrap()).collect(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn add_contact(
+        &self,
+        request: Request<AddContactRequest>,
+    ) -> GrpcResult<AddContactResponse> {
+        let request = request.into_inner();
+        let friend_request = FriendRequest {
+            id: Guid::random().to_vec(),
+            sender: todo!(), // TODO: @me - get acc via acs -> convert into card
+            receiver_id: request.user_id,
+            status: FriendRequestStatus::FrsPending.into(),
+        };
+
+        // forward to server
+        let broker = self.broker.connect().await?;
+        broker
+            .forward_friend_request(ForwardFriendRequestRequest {
+                friend_request: Some(friend_request),
+            })
+            .await
+            .map_err(|e| {
+                log::error!("Failed to forward friend request: {}", e);
+                tonic::Status::internal("Failed to forward friend request")
+            })?;
+
+        // add to sent friend requests
+        let mut frs = self.frs.lock().await;
+        let created = frs.create(Document::new(friend_request)).map_err(|e| {
+            log::error!("Failed to create friend request: {}", e);
+            tonic::Status::internal("Failed to create friend request")
+        })?;
+
+        log::debug!("Added new friend request: {:#?}", created);
+        let response = AddContactResponse {
+            response: None,
+            friend_request: created.model,
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn accept_friend_request(
+        &self,
+        request: Request<AcceptFriendRequestRequest>,
+    ) -> GrpcResult<AcceptFriendRequestResponse> {
+        let request = request.into_inner();
+        let freq = request.friend_request.unwrap();
+        let id = Guid::from_slice(&freq.id).expect("Not a valid guid");
+
+        // remove from local storage
+        let mut frs = self.frs.lock().await;
+        frs.delete(id);
+
+        // send to server
+        let mut broker = self.broker.connect().await?;
+        broker
+            .answer_friend_request(AnswerFriendRequestRequest {
+                friend_request: Some(freq),
+            })
+            .await?;
+
+        // TODO check if makes sense
+
+        let response = AcceptFriendRequestResponse {
+            status: ApiStatus::AsSuccess.into(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn reject_friend_request(
+        &self,
+        request: Request<RejectFriendRequestRequest>,
+    ) -> GrpcResult<RejectFriendRequestResponse> {
+        let request = request.into_inner();
+        let freq = request.friend_request.unwrap();
+        let id = Guid::from_slice(&freq.id).expect("Not a valid guid");
+
+        // remove from local storage
+        let mut frs = self.frs.lock().await;
+        frs.delete(id);
+
+        // send to server
+        let mut broker = self.broker.connect().await?;
+        broker
+            .answer_friend_request(AnswerFriendRequestRequest {
+                friend_request: Some(freq),
+            })
+            .await?;
+
+        // TODO check if makes sense
+        // TODO simplify accept/reject to answer sicne request contains whole friend request
+
+        let response = RejectFriendRequestResponse {
+            status: ApiStatus::AsSuccess.into(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn update_account(
+        &self,
+        request: Request<UpdateAccountRequest>,
+    ) -> GrpcResult<UpdateAccountResponse> {
+        let request = request.into_inner();
+
+        let account = request.account.unwrap();
+        let id = Guid::from_slice(&account.id).expect("Not a guid");
+        let broker = self.broker.connect().await?;
+        // TODO IMPL CALL FOR UPDATING ACC / PROFILE
+
+        let acs = self.acs.lock().await;
+        let document = acs.get_by_id(id).expect("Failed to get account").unwrap();
+
+        document.model = Some(account);
+        let updated = acs.update(id, document).expect("Failed to update account");
+
+        let response = UpdateAccountResponse {
+            status: ApiStatus::AsSuccess.into(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn send_card(&self, request: Request<SendCardRequest>) -> GrpcResult<SendCardResponse> {
+        let request = request.into_inner();
+
+        let card = request.card;
+        let broker = self.broker.connect().await?;
+        // TODO IMPL CALL FOR SENDING OWN CARD
+
+        let response = SendCardResponse {
+            status: ApiStatus::AsSuccess.into(),
+        };
+
+        Ok(Response::new(response))
+    }
+
+    async fn announce_online(&self, request: Request<()>) -> GrpcResult<AnnounceOnlineResponse> {
+        todo!()
+    }
+
+    async fn announce_offline(&self, request: Request<()>) -> GrpcResult<AnnounceOfflineResponse> {
+        todo!()
+    }
+
+    async fn send_message(
+        &self,
+        request: Request<SendMessageRequest>,
+    ) -> GrpcResult<SendMessageResponse> {
+        let request = request.into_inner();
+
+        let message = request.message;
+
+        let broker = self.broker.connect().
+        let stream = broker.forward_message(message).await?;
+    }
+
+    ASYNC FN PING(&self, request: Request<PingRequest>) -> GrpcResult<PingResponse> {
+        let request = request.into_inner();
+
+        let broker = self.broker.connect().await?;
+    }
+
+
+    async fn upload_file(
+        &self,
+        request: Request<UploadFileRequest>,
+    ) -> GrpcResult<UploadFileResponse> {
+        todo!()
+    }
+
+    async fn download_file(
+        &self,
+        request: Request<DownloadFileRequest>,
+    ) -> GrpcResult<DownloadFileResponse> {
+        todo!()
+    }
+
+    async fn remove_contact(
+        &self,
+        request: Request<RemoveContactRequest>,
+    ) -> GrpcResult<RemoveContactResponse> {
+        todo!()
+    }
+
+    async fn get_login_history(&self, request: Request<()>) -> GrpcResult<GetLoginHistoryResponse> {
+        todo!()
+    }
+}
