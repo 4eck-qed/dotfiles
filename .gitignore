@@ -2,3 +2,6 @@ Documents/
 ISOs/
 Pictures/
 Programs/
+**/emacs/auto-save-list
+**/emacs/elpa
+**/emacs/elpaca

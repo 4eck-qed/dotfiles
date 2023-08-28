@@ -1,4 +1,0 @@
-/home/baron/.emacs.d/elpaca/builds/vterm/build/CMakeFiles/vterm-module.dir
-/home/baron/.emacs.d/elpaca/builds/vterm/build/CMakeFiles/run.dir
-/home/baron/.emacs.d/elpaca/builds/vterm/build/CMakeFiles/edit_cache.dir
-/home/baron/.emacs.d/elpaca/builds/vterm/build/CMakeFiles/rebuild_cache.dir
