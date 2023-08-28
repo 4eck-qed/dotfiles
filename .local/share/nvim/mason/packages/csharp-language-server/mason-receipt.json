@@ -1,0 +1,1 @@
+{"metrics":{"start_time":1689768479320,"completion_time":1689768484768},"schema_version":"1.1","name":"csharp-language-server","links":{"share":{},"opt":{},"bin":{"csharp-ls":"csharp-ls"}},"secondary_sources":[],"primary_source":{"id":"pkg:nuget\/csharp-ls@0.8.0","type":"registry+v1","source":{"package":"csharp-ls","version":"0.8.0"}}}

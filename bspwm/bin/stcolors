@@ -1,3 +1,0 @@
-#!/bin/zsh
-
-xrdb merge ~/.cache/wal/colors.Xresources && kill -USR1 $(pidof st)
