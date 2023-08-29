@@ -5,3 +5,4 @@ Programs/
 **/emacs/auto-save-list
 **/emacs/elpa
 **/emacs/elpaca
+.local/share/nvim/**
