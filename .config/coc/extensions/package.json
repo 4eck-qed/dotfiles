@@ -12,7 +12,13 @@
     "coc-html": ">=1.8.0",
     "coc-vimtex": ">=1.1.5",
     "coc-prettier": ">=9.3.1",
-    "coc-angular": ">=13.3.6"
+    "coc-angular": ">=13.3.6",
+    "coc-sumneko-lua": ">=0.0.39",
+    "coc-lua": ">=2.0.5",
+    "coc-pyright": ">=1.1.325",
+    "coc-sh": ">=1.1.1",
+    "coc-java": ">=1.15.2",
+    "coc-python": ">=1.2.13"
   },
   "lastUpdate": 1692146913381
 }

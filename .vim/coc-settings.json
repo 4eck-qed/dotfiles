@@ -1,0 +1,15 @@
+{
+  "Lua.workspace.library": [
+    "${3rd}/bee/library",
+    "${3rd}/luassert/library",
+    "${3rd}/skynet/library",
+    "${3rd}/luv/library",
+    "${3rd}/OpenResty/library"
+  ],
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.diagnostics.globals": [
+    "ngx"
+  ],
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.diagnostics.workspaceDelay": 30000
+}

@@ -6,3 +6,5 @@ Programs/
 **/emacs/elpa
 **/emacs/elpaca
 .local/share/nvim/**
+**/coc-*-data/
+**/node_modules/
