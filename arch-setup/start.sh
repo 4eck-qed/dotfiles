@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST=1
+TEST=0
 
 #################################################
 #                   CONSTANTS                   #
@@ -40,7 +40,6 @@ PACKAGES_CORE=(
 PACKAGES_DEV=(
     "aws-cli"
     "neovim"
-    
     # C# / .NET
     "aspnet-runtime"
     "aspnet-targeting-pack"
@@ -55,11 +54,10 @@ PACKAGES_DEV=(
     "dotnet-targeting-pack-6.0"
     "netstandard-targeting-pack"
     "nuget"
-
     # C / C++
     "llvm"
     "ninja"
-
+    # Sogondi
     "lua"
     "python"
     "rustup"
@@ -124,7 +122,7 @@ install() {
         if [[ $TEST -eq 1 ]]; then
             printf "> install '$__pkg' <\n"
         else
-            yay -S --noconfirm "$__pkg"
+            yes | yay -S --noconfirm --needed "$__pkg" --overwrite '*'
         fi
     done
 
@@ -139,10 +137,6 @@ prompt() {
     __response=$(echo "$__response" | tr '[:upper]' '[:lower]')
     [ "$__response" = "y" ] || [ "$__response" = "yes" ]
 }
-
-collect() {
-    $(IFS=' '; echo "${1[*]}")
-}
 #################################################
 #                   START                       #
 #################################################
@@ -150,26 +144,36 @@ collect() {
 set -e
 
 
-echo "Welcome to barons one-script-to-success!" && sleep 2
+echo "Welcome to barons one-script-to-success!" && sleep 1
 echo -n "We're starting in 3" && sleep 1 && echo -n ", 2" && sleep 1 && echo ", 1" && sleep 1
 
+pushd /home/shared
 if [[ $TEST -eq 0 ]]; then
     mkdir -p /home/shared
-    pushd /home/shared
+    sudo groupadd shared || true
+    sudo usermod -aG shared $USER || true
+    sudo chmod -R g+w /home/shared
+    sudo chown -R $USER:shared /home/shared
     sudo pacman -Syu --noconfirm
 
     # get zsh, git, yay
     sudo pacman -S --noconfirm --needed zsh git base-devel
+    sudo rm -rf ./yay
     git clone https://aur.archlinux.org/yay.git
     cd yay
-    makepkg -si
-
+    makepkg -si --noconfirm
 fi
 reload
 
-echo ">> Core packages <<" && install "$(IFS=' '; echo "${PACKAGES_CORE[*]}")" && git-credential-oauth configure
-echo ">> Dev packages <<" && install "$(IFS=' '; echo "${PACKAGES_DEV[*]}")"
-echo ">> Optional packages <<" && install "$(IFS=' '; echo "${PACKAGES_OPT[*]}")"
+echo ">> Core packages <<"
+install "$(IFS=' '; echo "${PACKAGES_CORE[*]}")"
+git-credential-oauth configure
+
+echo ">> Dev packages <<"
+install "$(IFS=' '; echo "${PACKAGES_DEV[*]}")"
+
+echo ">> Optional packages <<"
+install "$(IFS=' '; echo "${PACKAGES_OPT[*]}")"
 
 if prompt "Do you want to use virtual machines?"; then
     install "$(IFS=' '; echo "${PACKAGES_KVM[*]}")"
@@ -188,5 +192,4 @@ echo ">> Configuration <<"
 prompt "Are you baron?" && BARON=1 || BARON=0
 # get dotfiles
 [[ $BARON -eq 1 ]] && git clone https://github.com/4eck-qed/dotfiles.git
-[[ $TEST -eq 0 ]] && popd
-
+popd
