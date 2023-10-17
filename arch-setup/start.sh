@@ -33,6 +33,7 @@ PACKAGES_CORE=(
     "sddm-git"
     "ulauncher"
     "wget"
+    "xorg-server"
     "zlib"
 )
 
