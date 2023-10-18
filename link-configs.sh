@@ -15,14 +15,15 @@ S2="$CYAN<$DIR_COLOR"
 CURSOR_UP="\033[A"
 LINE_END="\033[K"
 
-shared_dir="/home/shared"
+FROM="$1"
+TO="$2"
 
 # $1 : from
 # $2 : to
 ln_checked()
 {
-    from="$1"
-    to="$2"
+    local from="$1"
+    local to="$2"
 
     if [ -e "$to" ]; then
         echo -e $RED[Error] $DIR_COLOR $S1$to$S2 $RED already exists$NC
@@ -37,22 +38,23 @@ ln_checked()
 # $1 : path to .config
 ln_dotconfig()
 {
-    target_dir="$1"
+    local target_dir="$1"
     echo -e "$YELLOW_BOLD╔════════════════════════ .config ══════════════════════════════╗$NC"
     echo -e "                       $target_dir"
     
     i=1
-    for entry in "$shared_dir/.config/"*
+    for __entry in "$FROM/.config/"*
     do
+        local entry=$__entry
         # Extract the entry name without the path
-        entry_name=$(basename "$entry")
+        local entry_name=$(basename "$__entry")
         
         # Skip backups
         if [[ "$entry_name" == *-bkp* ]]; then
             continue
         fi
         
-        target_entry="$target_dir/$entry_name"
+        local target_entry="$target_dir/$entry_name"
         
         # Link it up, continue on fail
         ln_checked "$entry" "$target_entry" || continue
@@ -67,8 +69,8 @@ ln_dotconfig()
 # $1 : path to .local
 ln_dotlocal()
 {
-    dotlocal="$shared_dir/.local"
-    target_dir="$1"
+    local dotlocal="$FROM/.local"
+    local target_dir="$1"
     echo -e "$MAGENTA╔════════════════════════ .local ═══════════════════════════════╗$NC"
     echo -e "                       $target_dir"
 
@@ -81,30 +83,21 @@ ln_dotlocal()
 # $1 : path to root
 ln_home()
 {
-    target_dir="$1"
+    local target_dir="$1"
     echo -e "$GREEN╔════════════════════════   ~   ════════════════════════════════╗$NC"
     echo -e "                       $target_dir"
 
-    ln_checked "$shared_dir/.xinitrc" "$target_dir/.xinitrc"
-    ln_checked "$shared_dir/.zshrc" "$target_dir/.zshrc"
-    ln_checked "$shared_dir/.Xresources" "$target_dir/.Xresources"
+    ln_checked "$FROM/.xinitrc" "$target_dir/.xinitrc"
+    ln_checked "$FROM/.zshrc" "$target_dir/.zshrc"
+    ln_checked "$FROM/.Xresources" "$target_dir/.Xresources"
 
     echo -e "$GREEN╚═══════════════════════════════════════════════════════════════╝$NC"
 }
 
-ln_dotconfig /home/baron/.config
-ln_dotlocal /home/baron/.local
-ln_home /home/baron
+ln_dotconfig $TO/.config
+ln_dotlocal $TO/.local
+ln_home $TO
 
-ln_dotconfig /home/schaper/.config
-ln_dotlocal /home/schaper/.local
-ln_home /home/schaper
+ln_checked $FROM/Pictures/wallpapers /home/baron/Pictures/wallpapers
+ln_checked $FROM/Pictures/wallpapers /home/schaper/Pictures/wallpapers
 
-ln_checked /home/shared/Pictures/wallpapers /home/baron/Pictures/wallpapers
-ln_checked /home/shared/Pictures/wallpapers /home/schaper/Pictures/wallpapers
-
-# Fix permissions
-read -p "$(echo -e ${CYAN}"Fix permissions [may require sudo]? (y/n): "${NC})" choice
-if [ "$choice" == "y" ] || [ "$choice" == "Y" ]; then
-    /home/shared/fix-permissions.sh
-fi
