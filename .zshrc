@@ -5,24 +5,28 @@
 #  ┬  ┬┌─┐┬─┐┌─┐
 #  └┐┌┘├─┤├┬┘└─┐
 #   └┘ ┴ ┴┴└─└─┘
-export XDG_CONFIG_HOME="$HOME/.config"
-export XDG_CACHE_HOME="$HOME/.cache"
-export XDG_MUSIC_DIR="$HOME/Music"
-export XDG_PICTURES_DIR="$HOME/Pictures"
+
+# If you move this file any where but a home-like directory adjust ZSH_HOME
+# ZSH_HOME="$HOME"
+ZSH_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export XDG_CONFIG_HOME="$ZSH_HOME/.config"
+export XDG_CACHE_HOME="$ZSH_HOME/.cache"
+export XDG_MUSIC_DIR="$ZSH_HOME/Music"
+export XDG_PICTURES_DIR="$ZSH_HOME/Pictures"
+export SCRIPT_DIR="$ZSH_HOME/Scripts"
+
 export VISUAL='nvim'
 export EDITOR='nvim'
 export TERMINAL='kitty'
-export BROWSER='firefox-developer-edition'
+export BROWSER='chrome'
+
 export HISTORY_IGNORE="(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)"
 export CLICOLOR=1 # colors for ls & grep
 export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.avi=01;35:*.fli=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
-export G_WOW="$HOME/Games/battlenet/drive_c/Program Files (x86)/World of Warcraft"
 
-export CSHARP_POST_PROCESS_FILE="/usr/bin/uncrustify --no-backup"
-export UNCRUSTIFY_CONFIG="~/.config/uncrustify/uncrustify-rules.cfg"   
-
-if [ -d "$HOME/.local/bin" ] ;
-  then PATH="$HOME/.local/bin:$PATH"
+if [ -d "$ZSH_HOME/.local/bin" ] ;
+  then PATH="$ZSH_HOME/.local/bin:$PATH"
 fi
 
 
@@ -42,17 +46,30 @@ function whatsmyip ()
     echo -n "External IP: " ; curl -s ifconfig.me
 }
 
+# pnpm
+export PNPM_HOME="$ZSH_HOME/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+# bun completions
+[ -s "$ZSH_HOME/.bun/_bun" ] && source "$ZSH_HOME/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$ZSH_HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
 
 #  ┬  ┌─┐┌─┐┌┬┐  ┌─┐┌┐┌┌─┐┬┌┐┌┌─┐
 #  │  │ │├─┤ ││  ├┤ ││││ ┬││││├┤ 
 #  ┴─┘└─┘┴ ┴─┴┘  └─┘┘└┘└─┘┴┘└┘└─┘
 autoload -Uz compinit
 
-for dump in ~/.config/zsh/zcompdump(N.mh+24); do
-  compinit -d ~/.config/zsh/zcompdump
+for dump in $ZSH_HOME/.config/zsh/zcompdump(N.mh+24); do
+  compinit -d $ZSH_HOME/.config/zsh/zcompdump
 done
 
-compinit -C -d ~/.config/zsh/zcompdump
+compinit -C -d $ZSH_HOME/.config/zsh/zcompdump
 
 autoload -Uz add-zsh-hook
 autoload -Uz vcs_info
@@ -81,7 +98,7 @@ bindkey "^I" expand-or-complete-with-dots
 #  ┬ ┬┬┌─┐┌┬┐┌─┐┬─┐┬ ┬
 #  ├─┤│└─┐ │ │ │├┬┘└┬┘
 #  ┴ ┴┴└─┘ ┴ └─┘┴└─ ┴ 
-HISTFILE=~/.config/zsh/zhistory
+HISTFILE=$ZSH_HOME/.config/zsh/zhistory
 HISTSIZE=5000
 SAVEHIST=5000
 
@@ -101,7 +118,7 @@ setopt COMPLETE_IN_WORD    # Complete from both ends of a word.
 #   │ ├─┤├┤   ├─┘├┬┘│ ││││├─┘ │ 
 #   ┴ ┴ ┴└─┘  ┴  ┴└─└─┘┴ ┴┴   ┴
 function dir_icon {
-  if [[ "$PWD" == "$HOME" ]]; then
+  if [[ "$PWD" == "$ZSH_HOME" ]]; then
     echo "%B%F{black}%f%b"
   else
     echo "%B%F{cyan}%f%b"
@@ -116,7 +133,7 @@ PS1='%B%F{blue}%f%b  %B%F{magenta}%n%f%b $(dir_icon)  %B%F{red}%~%f%b${vcs_in
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
-source /home/shared/zsh-shift-select.plugin.zsh
+source $ZSH_HOME/.config/zsh/plugins/zsh-shift-select.plugin.zsh
 
 #  │╭╯ ┌─── ╮ ╭
 #  ├┴╮ ├──  └┬┘
@@ -141,7 +158,6 @@ bindkey "\e[3;5~" kill-word
 bindkey "\C-H" backward-delete-word
 
 do_nothing() {
-  # Do nothing
   return 0
 }
 
@@ -188,20 +204,6 @@ alias vim=nvim
 #  ┌─┐┬ ┬┌┬┐┌─┐  ┌─┐┌┬┐┌─┐┬─┐┌┬┐
 #  ├─┤│ │ │ │ │  └─┐ │ ├─┤├┬┘ │ 
 #  ┴ ┴└─┘ ┴ └─┘  └─┘ ┴ ┴ ┴┴└─ ┴ 
-$HOME/.local/bin/colorscript -r
+$ZSH_HOME/.local/bin/colorscript -r
 
 xset r rate 300 50
-
-# pnpm
-export PNPM_HOME="/home/schaper/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-# bun completions
-[ -s "/home/schaper/.bun/_bun" ] && source "/home/schaper/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"

@@ -15,8 +15,17 @@ S2="$CYAN<$DIR_COLOR"
 CURSOR_UP="\033[A"
 LINE_END="\033[K"
 
+# home-like origin - /home/<origin>
 FROM="$1"
+
+# home-like target - /home/<target>
 TO="$2"
+
+if [[ -z "$FROM" || -z "$TO" ]]; then
+    echo "Missing arguments"
+    echo "Example usage: link-configs.sh /home/origin /home/target"
+    exit 1
+fi
 
 # $1 : from
 # $2 : to
@@ -58,7 +67,7 @@ ln_dotconfig()
         
         # Link it up, continue on fail
         ln_checked "$entry" "$target_entry" || continue
-
+
         ((i++))
     done
 
@@ -74,8 +83,8 @@ ln_dotlocal()
     echo -e "$MAGENTA╔════════════════════════ .local ═══════════════════════════════╗$NC"
     echo -e "                       $target_dir"
 
-    ln_checked "$dotlocal/bin" "$target_dir/bin"
-    ln_checked "$dotlocal/share/nvim" "$target_dir/share/nvim"
+    ln_checked "$dotlocal/bin"          "$target_dir/bin"
+    ln_checked "$dotlocal/share/nvim"   "$target_dir/share/nvim"
 
     echo -e "$MAGENTA╚═══════════════════════════════════════════════════════════════╝$NC"    
 }
@@ -87,9 +96,9 @@ ln_home()
     echo -e "$GREEN╔════════════════════════   ~   ════════════════════════════════╗$NC"
     echo -e "                       $target_dir"
 
-    ln_checked "$FROM/.xinitrc" "$target_dir/.xinitrc"
-    ln_checked "$FROM/.zshrc" "$target_dir/.zshrc"
-    ln_checked "$FROM/.Xresources" "$target_dir/.Xresources"
+    ln_checked "$FROM/.xinitrc"     "$target_dir/.xinitrc"
+    ln_checked "$FROM/.zshrc"       "$target_dir/.zshrc"
+    ln_checked "$FROM/.Xresources"  "$target_dir/.Xresources"
 
     echo -e "$GREEN╚═══════════════════════════════════════════════════════════════╝$NC"
 }
@@ -98,6 +107,4 @@ ln_dotconfig $TO/.config
 ln_dotlocal $TO/.local
 ln_home $TO
 
-ln_checked $FROM/Pictures/wallpapers /home/baron/Pictures/wallpapers
-ln_checked $FROM/Pictures/wallpapers /home/schaper/Pictures/wallpapers
-
+ln_checked $FROM/Pictures/wallpapers $TO/Pictures/wallpapers

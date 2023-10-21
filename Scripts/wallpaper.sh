@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Directory containing the wallpaper images
-WALLPAPER_DIR="/home/shared/Pictures/wallpapers"
+# Directory containing the wallpapers
+WALLPAPER_DIR="$XDG_PICTURES_DIR/wallpapers"
 
 while true; do
     # Get a random image from the directory

@@ -1,10 +1,22 @@
+# .local
+.local/share/nvim/**
+
+# .config
+.config/**/emacs/auto-save-list
+.config/**/emacs/elpa
+.config/**/emacs/elpaca
+.config/**/coc/
+!.config/**/coc/extensions/package.json
+.config/**/node_modules/
+
 Documents/
 ISOs/
 Pictures/
 Programs/
-**/emacs/auto-save-list
-**/emacs/elpa
-**/emacs/elpaca
-.local/share/nvim/**
-**/coc-*-data/
-**/node_modules/
+node_modules/
+
+.gtkrc-2.0
+.nvidia-settings-rc
+zhistory
+zcompdump
+.log
