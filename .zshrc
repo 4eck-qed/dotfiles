@@ -34,16 +34,15 @@ fi
 alias whatismyip="whatsmyip"
 function whatsmyip ()
 {
-    # Internal IP Lookup.
-    if [ -e /sbin/ip ];
-    then
-	echo -n "Internal IP: " ; /sbin/ip addr show wlan0 | grep "inet " | awk -F: '{print $1}' | awk '{print $2}'
-    else
-	echo -n "Internal IP: " ; /sbin/ifconfig wlan0 | grep "inet " | awk -F: '{print $1} |' | awk '{print $2}'
-    fi
+  # Internal IP Lookup
+  if [ -e /sbin/ip ]; then
+    echo -n "Internal IP: " ; /sbin/ip addr show enp7s0 | grep "inet " | awk -F: '{print $1}' | awk '{print $2}'
+  else
+    echo -n "Internal IP: " ; /sbin/ifconfig enp7s0 | grep "inet " | awk -F: '{print $1} |' | awk '{print $2}'
+  fi
 
-    # External IP Lookup 
-    echo -n "External IP: " ; curl -s ifconfig.me
+  # External IP Lookup
+  echo -n "External IP: " ; curl -s https://ifconfig.me
 }
 
 # pnpm

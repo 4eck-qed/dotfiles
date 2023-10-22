@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export SCRIPT_DIR="$HOME/Scripts"
+
 while xsetroot -name "`date` `uptime | sed 's/.*,//'`"
 do
 	sleep 1

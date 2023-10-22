@@ -9,6 +9,8 @@
 !.config/**/coc/extensions/package.json
 .config/**/node_modules/
 
+.log
+
 Documents/
 ISOs/
 Pictures/
@@ -17,6 +19,6 @@ node_modules/
 
 .gtkrc-2.0
 .nvidia-settings-rc
+.xinitrc
 zhistory
 zcompdump
-.log
